@@ -22,7 +22,7 @@ export class Dashboard {
   private platformId = inject(PLATFORM_ID);
 
   @ViewChild('pieChartCanvas') pieChartCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('barChartCanvas') barChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('lineChartCanvas') lineChartCanvas!: ElementRef<HTMLCanvasElement>;
 
   stats = signal<DashboardStats | null>(null);
   loading = signal(true);
@@ -42,7 +42,7 @@ export class Dashboard {
         setTimeout(() => this.initCharts(data), 0);
       },
       error: () => {
-        this.error.set('Failed to load dashboard statistics.');
+        this.error.set('Failed to load dashboard statistics. Make sure the /stats endpoint is available.');
         this.loading.set(false);
       },
     });
@@ -54,54 +54,110 @@ export class Dashboard {
     const { Chart, registerables } = await import('chart.js');
     Chart.register(...registerables);
 
-    if (this.pieChartCanvas?.nativeElement) {
-      new Chart(this.pieChartCanvas.nativeElement, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(data.accountsByType).map((k) =>
-            k === 'CurrentBankAccount' ? 'Current' : 'Savings',
-          ),
-          datasets: [
-            {
-              data: Object.values(data.accountsByType),
-              backgroundColor: ['#4f46e5', '#7c3aed'],
-              borderWidth: 0,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
-          cutout: '65%',
-        },
-      });
-    }
+    this.buildPieChart(Chart, data);
+    this.buildLineChart(Chart, data);
+  }
 
-    if (this.barChartCanvas?.nativeElement) {
-      new Chart(this.barChartCanvas.nativeElement, {
-        type: 'bar',
-        data: {
-          labels: data.operationsByDay.map((d) => d.date),
-          datasets: [
-            {
-              label: 'Transactions',
-              data: data.operationsByDay.map((d) => d.count),
-              backgroundColor: '#6366f1',
-              borderRadius: 6,
+  private buildPieChart(Chart: any, data: DashboardStats) {
+    if (!this.pieChartCanvas?.nativeElement) return;
+
+    const labels = Object.keys(data.accountsByType).map((k) =>
+      k === 'CurrentBankAccount' ? 'Current Account' : 'Savings Account',
+    );
+    const values = Object.values(data.accountsByType);
+    const total = values.reduce((a, b) => a + b, 0);
+
+    new Chart(this.pieChartCanvas.nativeElement, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [
+          {
+            data: values,
+            backgroundColor: ['#4f46e5', '#7c3aed', '#a855f7', '#ec4899'],
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            hoverOffset: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              usePointStyle: true,
+              font: { size: 13 },
             },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
-            x: { grid: { display: false } },
+          },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => {
+                const value = context.raw as number;
+                const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                return `  ${context.label}: ${value} (${pct}%)`;
+              },
+            },
           },
         },
-      });
-    }
+      },
+    });
+  }
+
+  private buildLineChart(Chart: any, data: DashboardStats) {
+    if (!this.lineChartCanvas?.nativeElement) return;
+
+    new Chart(this.lineChartCanvas.nativeElement, {
+      type: 'line',
+      data: {
+        labels: data.operationsByDay.map((d) => d.date),
+        datasets: [
+          {
+            label: 'Transactions',
+            data: data.operationsByDay.map((d) => d.count),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#6366f1',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => `  ${context.raw} transaction${context.raw !== 1 ? 's' : ''}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, precision: 0 },
+            grid: { color: '#f3f4f6' },
+            border: { display: false },
+          },
+          x: {
+            grid: { display: false },
+            border: { display: false },
+          },
+        },
+      },
+    });
   }
 }
