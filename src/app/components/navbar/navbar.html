@@ -1,0 +1,36 @@
+<nav class="bg-indigo-900 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-2">
+        <svg class="w-8 h-8 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+        <span class="text-xl font-bold tracking-tight">Digital Bank</span>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <a routerLink="/customers" routerLinkActive="bg-indigo-700"
+          class="px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors">
+          Customers
+        </a>
+        <a routerLink="/accounts" routerLinkActive="bg-indigo-700"
+          class="px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors">
+          Accounts
+        </a>
+        <a routerLink="/dashboard" routerLinkActive="bg-indigo-700"
+          class="px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors">
+          Dashboard
+        </a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-indigo-300 text-sm font-medium">{{ authService.username() }}</span>
+        <button (click)="authService.logout()"
+          class="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
